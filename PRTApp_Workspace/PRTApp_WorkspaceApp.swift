@@ -5,6 +5,7 @@
 //  Created by Chonlathan Songsri on 11/5/2569 BE.
 //
 
+import SwiftData
 import SwiftUI
 
 @main
@@ -27,6 +28,7 @@ struct PRTApp_WorkspaceApp: App {
             }
             .environment(coordinator)
         }
+        .modelContainer(for: [DashboardCache.self, PendingCaseCache.self])
     }
 
     @ViewBuilder
