@@ -17,7 +17,7 @@ struct PRTApp_WorkspaceApp: App {
             Group {
                 if coordinator.isLoggedIn {
                     NavigationStack(path: $coordinator.path) {
-                        Text("Dashboard Placeholder")
+                        DashboardView()
                             .navigationDestination(for: Route.self) { route in
                                 destinationView(for: route)
                             }
@@ -35,11 +35,11 @@ struct PRTApp_WorkspaceApp: App {
     private func destinationView(for route: Route) -> some View {
         switch route {
         case .dashboard:
-            Text("Dashboard Placeholder")
+            DashboardView()
         case .approvalList:
             Text("Approval List Placeholder")
         case .approvalDetail(let caseId):
-            Text("Approval Detail Placeholder: \(caseId)")
+            ApprovalDetailView(caseId: caseId)
         case .chatBot:
             Text("ChatBot Placeholder")
         }

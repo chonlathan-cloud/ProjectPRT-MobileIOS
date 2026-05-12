@@ -1,0 +1,26 @@
+//
+//  PDFKitView.swift
+//  PRTApp_Workspace
+//
+
+import PDFKit
+import SwiftUI
+
+struct PDFKitView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> PDFView {
+        let pdfView = PDFView()
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displayDirection = .vertical
+        pdfView.backgroundColor = .systemGroupedBackground
+        pdfView.document = PDFDocument(url: url)
+        return pdfView
+    }
+
+    func updateUIView(_ pdfView: PDFView, context: Context) {
+        pdfView.autoScales = true
+        pdfView.document = PDFDocument(url: url)
+    }
+}
