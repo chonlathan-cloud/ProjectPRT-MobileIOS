@@ -23,7 +23,7 @@ struct PRTApp_WorkspaceApp: App {
                             }
                     }
                 } else {
-                    Text("Login View Placeholder")
+                    LoginView()
                 }
             }
             .environment(coordinator)
