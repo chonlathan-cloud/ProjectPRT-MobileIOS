@@ -9,6 +9,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppCoordinator.self) private var coordinator
     @Query(sort: \DashboardCache.year, order: .reverse) private var caches: [DashboardCache]
     @State private var viewModel = DashboardViewModel()
 
@@ -37,6 +38,16 @@ struct DashboardView: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Dashboard")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    coordinator.push(.chatBot)
+                } label: {
+                    Image(systemName: "message.fill")
+                }
+                .accessibilityLabel("Open FinBot Assistant")
+            }
+        }
         .task {
             await refreshDashboard()
         }
@@ -209,6 +220,7 @@ private struct DashboardChartItem: Identifiable {
 #Preview {
     NavigationStack {
         DashboardView()
+            .environment(AppCoordinator())
     }
     .modelContainer(for: DashboardCache.self, inMemory: true)
 }
