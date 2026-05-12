@@ -41,7 +41,7 @@ struct PRTApp_WorkspaceApp: App {
         case .approvalDetail(let caseId):
             ApprovalDetailView(caseId: caseId)
         case .chatBot:
-            Text("ChatBot Placeholder")
+            ChatView()
         }
     }
 }
