@@ -5,6 +5,7 @@
 
 import Observation
 import SwiftUI
+
 enum Route: Hashable {
     case dashboard
     case approvalList
@@ -12,8 +13,15 @@ enum Route: Hashable {
     case chatBot
 }
 
+enum AppTab: Hashable {
+    case dashboard
+    case approvals
+    case chatbot
+}
+
 extension Notification.Name {
     static let userUnauthorized = Notification.Name("ProjectPRT.userUnauthorized")
+    static let fcmDeepLink = Notification.Name("fcmDeepLink")
 }
 
 @MainActor
@@ -21,9 +29,14 @@ extension Notification.Name {
 final class AppCoordinator {
     var path = NavigationPath()
     var isLoggedIn = false
+    var selectedTab: AppTab = .dashboard
+    var userRole = ""
 
     @ObservationIgnored
     private var unauthorizedObserver: NSObjectProtocol?
+
+    @ObservationIgnored
+    private var fcmDeepLinkObserver: NSObjectProtocol?
 
     init(notificationCenter: NotificationCenter = .default) {
         unauthorizedObserver = notificationCenter.addObserver(
@@ -33,6 +46,18 @@ final class AppCoordinator {
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.logout()
+            }
+        }
+
+        fcmDeepLinkObserver = notificationCenter.addObserver(
+            forName: .fcmDeepLink,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let caseId = notification.userInfo?["caseId"] as? String else { return }
+
+            Task { @MainActor [weak self] in
+                self?.handleDeepLink(caseId: caseId)
             }
         }
     }
@@ -55,15 +80,18 @@ final class AppCoordinator {
         push(.approvalDetail(caseId: caseId))
     }
 
-    func loginSuccess() {
+    func loginSuccess(role: String) {
+        userRole = role
         isLoggedIn = true
+        selectedTab = .dashboard
         popToRoot()
     }
 
     func logout() {
         KeychainManager.shared.deleteToken()
+        userRole = ""
         isLoggedIn = false
+        selectedTab = .dashboard
         popToRoot()
     }
 }
-
