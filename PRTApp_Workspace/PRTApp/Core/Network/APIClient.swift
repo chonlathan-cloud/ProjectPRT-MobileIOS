@@ -6,8 +6,40 @@
 import Foundation
 
 protocol APIClientProtocol: Sendable {
-    func request<T: Decodable>(endpoint: String, method: String, body: Data?) async throws -> T
+    func request<T: Decodable, U: Encodable>(
+        endpoint: String,
+        method: String,
+        body: U?,
+        requiresAuth: Bool
+    ) async throws -> T
 }
+
+extension APIClientProtocol {
+    func request<T: Decodable, U: Encodable>(
+        endpoint: String,
+        method: String,
+        body: U?,
+        requiresAuth: Bool = true
+    ) async throws -> T {
+        try await request(endpoint: endpoint, method: method, body: body, requiresAuth: requiresAuth)
+    }
+
+    func request<T: Decodable>(
+        endpoint: String,
+        method: String = "GET",
+        requiresAuth: Bool = true
+    ) async throws -> T {
+        let emptyBody: EmptyRequestBody? = nil
+        return try await request(
+            endpoint: endpoint,
+            method: method,
+            body: emptyBody,
+            requiresAuth: requiresAuth
+        )
+    }
+}
+
+private struct EmptyRequestBody: Encodable {}
 
 final class APIClient: APIClientProtocol, @unchecked Sendable {
     static let shared = APIClient()
@@ -15,36 +47,46 @@ final class APIClient: APIClientProtocol, @unchecked Sendable {
     private let baseURL: URL
     private let urlSession: URLSession
     private let decoder: JSONDecoder
+    private let encoder: JSONEncoder
 
     init(
-        baseURL: URL? = URL(string: "https://api.projectprt.com/v1/"),
+        baseURL: URL = URL(string: "https://backend-api-886029565568.asia-southeast1.run.app/api/v1")!,
         urlSession: URLSession = .shared,
-        decoder: JSONDecoder = JSONDecoder()
+        decoder: JSONDecoder = JSONDecoder(),
+        encoder: JSONEncoder = JSONEncoder()
     ) {
-        guard let baseURL else {
-            preconditionFailure("Invalid API base URL.")
-        }
-
         self.baseURL = baseURL
         self.urlSession = urlSession
         self.decoder = decoder
+        self.encoder = encoder
     }
 
-    func request<T: Decodable>(endpoint: String, method: String = "GET", body: Data? = nil) async throws -> T {
-        guard let token = KeychainManager.shared.getToken() else {
-            throw NetworkError.unauthorized
-        }
-
+    func request<T: Decodable, U: Encodable>(
+        endpoint: String,
+        method: String = "GET",
+        body: U? = nil,
+        requiresAuth: Bool = true
+    ) async throws -> T {
         guard let url = makeURL(for: endpoint) else {
             throw NetworkError.invalidURL
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = method
-        request.httpBody = body
         request.timeoutInterval = 15.0
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if requiresAuth {
+            guard let token = KeychainManager.shared.getToken() else {
+                throw NetworkError.unauthorized
+            }
+
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
 
         let data: Data
         let response: URLResponse
@@ -77,7 +119,8 @@ final class APIClient: APIClientProtocol, @unchecked Sendable {
     }
 
     private func makeURL(for endpoint: String) -> URL? {
-        let normalizedEndpoint = endpoint.hasPrefix("/") ? String(endpoint.dropFirst()) : endpoint
-        return URL(string: normalizedEndpoint, relativeTo: baseURL)?.absoluteURL
+        let base = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let normalizedEndpoint = endpoint.hasPrefix("/") ? endpoint : "/\(endpoint)"
+        return URL(string: base + normalizedEndpoint)
     }
 }

@@ -10,6 +10,7 @@ import SwiftUI
 
 @main
 struct PRTApp_WorkspaceApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var coordinator = AppCoordinator()
 
     var body: some Scene {
@@ -17,7 +18,7 @@ struct PRTApp_WorkspaceApp: App {
             Group {
                 if coordinator.isLoggedIn {
                     NavigationStack(path: $coordinator.path) {
-                        DashboardView()
+                        MainTabView()
                             .navigationDestination(for: Route.self) { route in
                                 destinationView(for: route)
                             }
@@ -37,7 +38,7 @@ struct PRTApp_WorkspaceApp: App {
         case .dashboard:
             DashboardView()
         case .approvalList:
-            Text("Approval List Placeholder")
+            ApprovalListView()
         case .approvalDetail(let caseId):
             ApprovalDetailView(caseId: caseId)
         case .chatBot:
